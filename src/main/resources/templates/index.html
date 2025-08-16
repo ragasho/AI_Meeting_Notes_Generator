@@ -32,14 +32,10 @@
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 mt-4">
-            <button type="button" id="recordBtn"
-                    class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 flex items-center justify-center">
-
-                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg"
-                     fill="currentColor" viewBox="0 0 640 640">
+            <button type="button" id="recordBtn" class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white bg-amber-500 hover:bg-amber-600">
+                <svg class="w-5 h-5 mr-2 inline" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 640 640">
                     <path d="M320 64C267 64 224 107 224 160L224 288C224 341 267 384 320 384C373 384 416 341 416 288L416 160C416 107 373 64 320 64zM176 248C176 234.7 165.3 224 152 224C138.7 224 128 234.7 128 248L128 288C128 385.9 201.3 466.7 296 478.5L296 528L248 528C234.7 528 224 538.7 224 552C224 565.3 234.7 576 248 576L392 576C405.3 576 416 565.3 416 552C416 538.7 405.3 528 392 528L344 528L344 478.5C438.7 466.7 512 385.9 512 288L512 248C512 234.7 501.3 224 488 224C474.7 224 464 234.7 464 248L464 288C464 367.5 399.5 432 320 432C240.5 432 176 367.5 176 288L176 248z"/>
                 </svg>
-
                 Record
             </button>
             <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700">Summarize</button>
@@ -67,7 +63,7 @@
     const uploadForm = document.getElementById('uploadForm');
     const summaryContainer = document.getElementById('summary-wrap'); // ✅ consistent naming
     const bar = document.getElementById('bar');
-    const progress = document.querySelector('.progress');
+    const progress = document.getElementById('progress');
     const downloadBtn = document.getElementById('downloadBtn');
     const copyBtn = document.getElementById('copyBtn');
     const summaryInput = document.getElementById('summaryInput');
@@ -88,6 +84,7 @@
         }
     });
 
+    // Helper to toggle button content
     function toggleRecordButton(isRecording) {
         if (isRecording) {
             // Stop icon
@@ -138,7 +135,6 @@
                     clearInterval(flashInterval);
                     recordBtn.style.background = "#f59e0b";
                     toggleRecordButton(false);
-
                 };
                 mediaRecorder.start();
                 toggleRecordButton(true);
