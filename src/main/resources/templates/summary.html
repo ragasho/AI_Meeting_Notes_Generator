@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<head>
+    <meta charset="UTF-8">
+    <title>Meeting Summary</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding:16px;">
+<h2>📄 Meeting Notes</h2>
+<div id="summary-box" style="background:#f6f7f9; padding:14px; line-height:1.6; border-radius:10px; border:1px solid #e4e7eb;" th:text="${summary}"></div>
+
+<form id="pdfForm" method="POST" action="/download-pdf">
+    <input type="hidden" name="summary" id="summaryInput" />
+    <button type="button" onclick="downloadPDF()"
+            style="background:#4CAF50; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; margin-top:12px;">
+        Download as PDF
+    </button>
+</form>
+
+<script type="text/javascript">
+    function downloadPDF() {
+        const summaryText = document.getElementById("summary-box").innerText;
+        document.getElementById("summaryInput").value = summaryText;
+        document.getElementById("pdfForm").submit();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>AI Meeting Notes Generator</title>
+    <link rel="stylesheet" th:href="@{/css/output.css}">
+</head>
+<body class="m-0 min-h-screen bg-gradient-to-b from-indigo-50 to-white flex justify-center items-start p-4 sm:p-10 font-sans">
+
+<div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">📄 AI Meeting Notes Generator</h1>
+    <p class="text-slate-600 mb-6">Turn your meeting audio into clean summaries in seconds.</p>
+
+    <!-- Upload Form -->
+    <form id="uploadForm" method="POST" action="/upload" enctype="multipart/form-data">
+        <div id="drop" class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-6 text-center transition hover:border-indigo-500 hover:bg-indigo-50">
+            <p class="text-slate-600">Drag & drop your audio here</p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-3">
+                <label for="file" class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg">Choose File</label>
+                <span id="fileName" class="text-sm text-slate-600 truncate max-w-[200px] sm:max-w-[250px]"></span>
+                <input id="file" type="file" name="file" accept="audio/*" required class="hidden"/>
+            </div>
+
+            <!-- Progress -->
+            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-4 hidden" id="progress">
+                <div id="bar" class="h-full bg-indigo-600 w-0 transition-all duration-300"></div>
+            </div>
+
+            <p class="text-xs text-slate-500 mt-2">Supported: MP3, WAV, M4A, MP4 • Max 25MB</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button type="button" id="recordBtn"
+                    class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 flex items-center justify-center">
+
+                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg"
+                     fill="currentColor" viewBox="0 0 640 640">
+                    <path d="M320 64C267 64 224 107 224 160L224 288C224 341 267 384 320 384C373 384 416 341 416 288L416 160C416 107 373 64 320 64zM176 248C176 234.7 165.3 224 152 224C138.7 224 128 234.7 128 248L128 288C128 385.9 201.3 466.7 296 478.5L296 528L248 528C234.7 528 224 538.7 224 552C224 565.3 234.7 576 248 576L392 576C405.3 576 416 565.3 416 552C416 538.7 405.3 528 392 528L344 528L344 478.5C438.7 466.7 512 385.9 512 288L512 248C512 234.7 501.3 224 488 224C474.7 224 464 234.7 464 248L464 288C464 367.5 399.5 432 320 432C240.5 432 176 367.5 176 288L176 248z"/>
+                </svg>
+
+                Record
+            </button>
+            <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700">Summarize</button>
+        </div>
+    </form>
+
+    <!-- Summary -->
+    <div id="summary-wrap" class="mt-5"></div>
+
+    <!-- PDF + Copy -->
+    <form id="pdfForm" method="POST" action="/download-pdf">
+        <input type="hidden" name="summary" id="summaryInput" />
+        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button type="button" id="downloadBtn" class="hidden px-5 py-2.5 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Download as PDF</button>
+            <button type="button" id="copyBtn" class="hidden px-5 py-2.5 rounded-lg font-semibold bg-slate-200 hover:bg-slate-300">Copy Text</button>
+        </div>
+    </form>
+
+    <p class="mt-6 text-xs text-slate-500 text-center">Powered by AI • Your files are processed on-the-fly and not stored.</p>
+</div>
+
+<script>
+    const drop = document.getElementById('drop');
+    const fileInput = document.getElementById('file');
+    const uploadForm = document.getElementById('uploadForm');
+    const summaryContainer = document.getElementById('summary-wrap'); // ✅ consistent naming
+    const bar = document.getElementById('bar');
+    const progress = document.querySelector('.progress');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const summaryInput = document.getElementById('summaryInput');
+    const fileNameSpan = document.getElementById('fileName');
+    const recordBtn = document.getElementById('recordBtn');
+    let mediaRecorder, recordedChunks = [], currentStream = null;
+
+    // Hide copy/download initially
+    downloadBtn.style.display = 'none';
+    copyBtn.style.display = 'none';
+
+    // Show file name after selecting
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            fileNameSpan.textContent = fileInput.files[0].name;
+        } else {
+            fileNameSpan.textContent = '';
+        }
+    });
+
+    function toggleRecordButton(isRecording) {
+        if (isRecording) {
+            // Stop icon
+            recordBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 inline" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 640 640">
+                <path d="M160 96L480 96C515.3 96 544 124.7 544 160L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 160C96 124.7 124.7 96 160 96z"/>
+            </svg>
+            Stop
+        `;
+        } else {
+            // Mic icon
+            recordBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2 inline" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 640 640">
+                <path d="M320 64C267 64 224 107 224 160L224 288C224 341 267 384 320 384C373 384 416 341 416 288L416 160C416 107 373 64 320 64zM176 248C176 234.7 165.3 224 152 224C138.7 224 128 234.7 128 248L128 288C128 385.9 201.3 466.7 296 478.5L296 528L248 528C234.7 528 224 538.7 224 552C224 565.3 234.7 576 248 576L392 576C405.3 576 416 565.3 416 552C416 538.7 405.3 528 392 528L344 528L344 478.5C438.7 466.7 512 385.9 512 288L512 248C512 234.7 501.3 224 488 224C474.7 224 464 234.7 464 248L464 288C464 367.5 399.5 432 320 432C240.5 432 176 367.5 176 288L176 248z"/>
+            </svg>
+            Record
+        `;
+        }
+    }
+
+    // Recording feature with flashing red effect
+    let flashInterval = null;
+
+    // Recording feature
+    recordBtn.onclick = async () => {
+        if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(currentStream);
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const file = new File([blob], "recording.webm", { type: 'audio/webm' });
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    fileNameSpan.textContent = file.name;
+
+                    // Stop mic stream
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => track.stop());
+                        currentStream = null;
+                    }
+                    // Stop flashing
+                    clearInterval(flashInterval);
+                    recordBtn.style.background = "#f59e0b";
+                    toggleRecordButton(false);
+
+                };
+                mediaRecorder.start();
+                toggleRecordButton(true);
+
+                // Flashing red background while recording
+                flashInterval = setInterval(() => {
+                    recordBtn.style.background =
+                        recordBtn.style.background === "red" ? "#dc2626" : "red";
+                }, 500);
+
+            } catch (err) {
+                alert("Microphone access denied or unavailable.");
+            }
+        } else {
+            mediaRecorder.stop();
+            recordBtn.textContent = "🎙 Record";
+            recordBtn.style.background = "#f59e0b";
+        }
+    };
+
+    function updateFileName() {
+        if (fileInput.files.length > 0) {
+            fileNameSpan.textContent = fileInput.files[0].name;
+        } else {
+            fileNameSpan.textContent = '';
+        }
+    }
+
+    fileInput.addEventListener('change', updateFileName);
+
+    ['dragenter','dragover'].forEach(evt => drop.addEventListener(evt, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.add('drag');
+    }));
+    ['dragleave','drop'].forEach(evt => drop.addEventListener(evt, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.remove('drag');
+    }));
+    drop.addEventListener('drop', e => {
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            updateFileName();
+        }
+    });
+
+
+    // Upload with progress
+    uploadForm.addEventListener('submit', e => { // ✅ changed 'form' to 'uploadForm'
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if (!file) return alert('Please choose a file.');
+        if (file.size > 25 * 1024 * 1024) { alert('File too large (max 25MB).'); return; }
+
+        const data = new FormData();
+        data.append('file', file);
+
+        progress.style.display = 'block';
+        bar.style.width = '10%';
+        summaryContainer.innerHTML = "<div class='summary-card'>Generating summary...</div>"; // ✅ fixed var name
+        downloadBtn.style.display = 'none';
+        copyBtn.style.display = 'none';
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true);
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.max(10, Math.min(90, Math.round((e.loaded / e.total) * 100)));
+                bar.style.width = pct + '%';
+            }
+        };
+
+        xhr.onload = () => {
+            bar.style.width = '100%';
+            setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 400);
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                // ✅ Ensure only summary text is displayed
+                summaryContainer.innerHTML = `<div class="summary-card">${xhr.responseText}</div>`;
+
+                summaryInput.value = summaryContainer.innerText;
+
+                downloadBtn.style.display = 'inline-block';
+                copyBtn.style.display = 'inline-block';
+
+            } else {
+                summaryContainer.innerHTML = "<div class='error'>Upload failed. Try again.</div>";
+            }
+        };
+
+        xhr.onerror = () => {
+            progress.style.display = 'none';
+            summaryContainer.innerHTML = "<div class='error'>Network error. Please check your connection.</div>";
+        };
+
+        xhr.send(data);
+    });
+
+    downloadBtn.onclick = () => {
+        if (!summaryInput.value.trim()) {
+            alert('No summary yet.');
+            return;
+        }
+        document.getElementById('pdfForm').submit();
+    };
+
+    copyBtn.onclick = async () => {
+        const text = summaryInput.value || summaryContainer.innerText || '';
+        if (!text.trim()) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = 'Copy Text', 1200);
+        } catch {
+            alert('Copy failed.');
+        }
+    };
+</script>
+
+</body>
+</html>
