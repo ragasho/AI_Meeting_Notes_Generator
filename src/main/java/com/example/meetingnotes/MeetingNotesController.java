@@ -5,7 +5,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,20 +23,40 @@ public class MeetingNotesController {
         return "index";
     }
 
-    // AJAX: upload -> returns HTML fragment (safe)
+    // AJAX: upload (file or link) -> returns HTML fragment (safe)
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
-    public String upload(@RequestParam("file") MultipartFile file) {
+    public String upload(
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "audioLink", required = false) String audioLink
+    ) {
         try {
-            if (file.isEmpty()) return "<div style='color:#b00020;'>Please choose an audio file.</div>";
-            if (file.getSize() > 25L * 1024 * 1024)
-                return "<div style='color:#b00020;'>File too large. Max 25MB.</div>";
+            byte[] audioBytes;
+            String fileName;
 
-            String transcript = openAIService.speechToText(file.getBytes(), file.getOriginalFilename());
+            if (file != null && !file.isEmpty()) {
+                // 🔹 File upload path
+                if (file.getSize() > 25L * 1024 * 1024) {
+                    return "<div style='color:#b00020;'>File too large. Max 25MB.</div>";
+                }
+                audioBytes = file.getBytes();
+                fileName = file.getOriginalFilename();
+            } else if (audioLink != null && !audioLink.isBlank()) {
+                // 🔹 Meeting link path
+                audioBytes = openAIService.downloadAudioFromLink(audioLink);
+                fileName = "downloaded_audio.mp3";
+            } else {
+                return "<div style='color:#b00020;'>Please choose an audio file or provide a meeting link.</div>";
+            }
+
+            // 1. Transcribe
+            String transcript = openAIService.speechToText(audioBytes, fileName);
+
+            // 2. Summarize
             String summary = openAIService.summarizeText(transcript);
 
-            // Display as HTML; keep text version for PDF via JS .innerText
+            // Display as safe HTML (keep plain text version for PDF)
             String safeHtml = summary
                     .replace("&", "&amp;")
                     .replace("<", "&lt;")
@@ -56,10 +75,9 @@ public class MeetingNotesController {
         }
     }
 
-    // Download PDF: expects plain text (we send innerText from the page)
+    // Download PDF
     @PostMapping("/download-pdf")
     public ResponseEntity<byte[]> downloadPdf(@RequestParam("summary") String summary) throws Exception {
-        // summary is plain text (no HTML); if HTML sneaks in, normalize:
         String plainText = summary.replaceAll("<br\\s*/?>", "\n");
         byte[] pdf = pdfService.generateMeetingNotesPdf("Meeting Notes", plainText);
         return ResponseEntity.ok()

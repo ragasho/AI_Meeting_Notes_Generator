@@ -1,27 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>AI Meeting Notes Generator</title>
-    <link rel="stylesheet" th:href="@{/css/output.css}">
+    <meta charset="UTF-8">
+    <title>AI Meeting Notes Generator | Summarize Meetings & Audio Online</title>
+    <meta name="description" content="Convert meeting recordings into clean, structured summaries instantly. Upload or record audio, and get AI-powered notes with download & copy options in seconds.">
+    <meta name="keywords" content="AI meeting notes generator, summarize meeting audio online, meeting transcription tool, AI audio summarizer, meeting minutes generator, record and summarize meetings">
+    <meta name="robots" content="index, follow">
 </head>
 <body class="m-0 min-h-screen bg-gradient-to-b from-indigo-50 to-white flex justify-center items-start p-4 sm:p-10 font-sans">
 
 <div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
 
-    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">📄 AI Meeting Notes Generator</h1>
-    <p class="text-slate-600 mb-6">Turn your meeting audio into clean summaries in seconds.</p>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+        AI Meeting Notes Generator
+    </h1>
+    <p class="text-slate-600 mt-2">Convert conversations into professional summaries — instantly.</p>
+
+
+    <!-- Website Description -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-6 sm:p-8 mb-6 shadow-inner">
+        <h2 class="text-xl sm:text-2xl font-semibold text-indigo-700 mb-3">✨ Save Hours on Note-Taking</h2>
+        <p class="text-slate-600 leading-relaxed">
+            Tired of manually writing meeting notes? Our <span class="font-medium text-indigo-600">AI-powered generator</span>
+            instantly transforms your <span class="font-medium">meeting recordings</span> or <span class="font-medium">audio links</span>
+            into clean, structured summaries.
+        </p>
+        <ul class="mt-4 space-y-2 text-slate-700">
+            <li class="flex items-start gap-2">
+                <span class="text-indigo-500">✔</span>
+                Upload audio files or paste links (MP3, WAV, M4A, MP4).
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-indigo-500">✔</span>
+                Record live conversations directly from the browser.
+            </li>
+            <li class="flex items-start gap-2">
+                <span class="text-indigo-500">✔</span>
+                Get instant AI summaries you can <span class="font-medium">download as PDF</span> or <span class="font-medium">copy with one click</span>.
+            </li>
+        </ul>
+        <p class="mt-4 text-slate-500 text-sm">
+            Perfect for <span class="font-medium text-indigo-600">teams, students, and professionals</span> who never want to miss a key detail again.
+        </p>
+    </div>
+
 
     <!-- Upload Form -->
-    <form id="uploadForm" method="POST" action="/upload" enctype="multipart/form-data">
+    <form id="uploadForm" enctype="multipart/form-data" method="post" class="space-y-5">
         <div id="drop" class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-6 text-center transition hover:border-indigo-500 hover:bg-indigo-50">
             <p class="text-slate-600">Drag & drop your audio here</p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-3">
-                <label for="file" class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg">Choose File</label>
+                <label for="file" class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-lg">
+                    Choose File
+                </label>
                 <span id="fileName" class="text-sm text-slate-600 truncate max-w-[200px] sm:max-w-[250px]"></span>
-                <input id="file" type="file" name="file" accept="audio/*" required class="hidden"/>
+
+                <input id="file" type="file" name="file" accept="audio/*" required class="hidden" onchange="toggleRemoveBtn()"/>
+
+                <button type="button" class="rm-btn hidden" onclick="clearFileInput()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
+                        <path fill="#d41616" d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM231 231C240.4 221.6 255.6 221.6 264.9 231L319.9 286L374.9 231C384.3 221.6 399.5 221.6 408.8 231C418.1 240.4 418.2 255.6 408.8 264.9L353.8 319.9L408.8 374.9C418.2 384.3 418.2 399.5 408.8 408.8C399.4 418.1 384.2 418.2 374.9 408.8L319.9 353.8L264.9 408.8C255.5 418.2 240.3 418.2 231 408.8C221.7 399.4 221.6 384.2 231 374.9L286 319.9L231 264.9C221.6 255.5 221.6 240.3 231 231z"/>
+                    </svg>
+                </button>
             </div>
+
+
+            <!-- OR Divider
+            <div class="flex items-center my-4">
+                <div class="flex-grow border-t border-slate-300"></div>
+                <span class="px-2 text-sm text-slate-500">OR</span>
+                <div class="flex-grow border-t border-slate-300"></div>
+            </div>
+
+             Audio Link Bar
+            <div class="flex flex-col sm:flex-row gap-3 items-center">
+                <label for="audioLink"></label><input
+                        type="url"
+                        id="audioLink"
+                        name="audioLink"
+                        placeholder="Paste audio file link (MP3, WAV, M4A)"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                <button type="button" class="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white" onclick="clearAudioLink()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 fill-current">
+                        <path fill="#d41616" d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM231 231C240.4 221.6 255.6 221.6 264.9 231L319.9 286L374.9 231C384.3 221.6 399.5 221.6 408.8 231C418.1 240.4 418.2 255.6 408.8 264.9L353.8 319.9L408.8 374.9C418.2 384.3 418.2 399.5 408.8 408.8C399.4 418.1 384.2 418.2 374.9 408.8L319.9 353.8L264.9 408.8C255.5 418.2 240.3 418.2 231 408.8C221.7 399.4 221.6 384.2 231 374.9L286 319.9L231 264.9C221.6 255.5 221.6 240.3 231 231z"/>
+                    </svg>
+                </button>
+            </div>
+            -->
 
             <!-- Progress -->
             <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mt-4 hidden" id="progress">
@@ -44,7 +111,6 @@
 
     <!-- Summary -->
     <div id="summary-wrap" class="mt-5"></div>
-
     <!-- PDF + Copy -->
     <form id="pdfForm" method="POST" action="/download-pdf">
         <input type="hidden" name="summary" id="summaryInput" />
@@ -69,6 +135,8 @@
     const summaryInput = document.getElementById('summaryInput');
     const fileNameSpan = document.getElementById('fileName');
     const recordBtn = document.getElementById('recordBtn');
+    const audioLinkInput = document.getElementById('audioLink');
+
     let mediaRecorder, recordedChunks = [], currentStream = null;
 
     // Hide copy/download initially
@@ -83,6 +151,35 @@
             fileNameSpan.textContent = '';
         }
     });
+
+    function clearAudioLink() {
+        document.getElementById("audioLink").value = "";
+    }
+
+    function toggleRemoveBtn() {
+        const fileInput = document.getElementById("file");
+        const removeBtn = document.querySelector(".rm-btn");
+        const fileName = document.getElementById("fileName");
+
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+            removeBtn.classList.remove("hidden");
+        } else {
+            fileName.textContent = "";
+            removeBtn.classList.add("hidden");
+        }
+    }
+
+    function clearFileInput() {
+        const fileInput = document.getElementById("file");
+        const removeBtn = document.querySelector(".rm-btn");
+        const fileName = document.getElementById("fileName");
+
+        fileInput.value = "";
+        fileName.textContent = "";
+        removeBtn.classList.add("hidden");
+    }
+
 
     // Helper to toggle button content
     function toggleRecordButton(isRecording) {
@@ -188,10 +285,19 @@
         e.preventDefault();
         const file = fileInput.files[0];
         if (!file) return alert('Please choose a file.');
+        const audioLink = audioLinkInput.value.trim(); // ✅ new
         if (file.size > 25 * 1024 * 1024) { alert('File too large (max 25MB).'); return; }
 
+        if (!file && !audioLink) {
+            return alert('Please choose a file or paste an audio link.');
+        }
+
         const data = new FormData();
-        data.append('file', file);
+        if (file) {
+            data.append('file', file);
+        } else {
+            data.append('audioLink', audioLink); // ✅ send link if no file
+        }
 
         progress.style.display = 'block';
         bar.style.width = '10%';
